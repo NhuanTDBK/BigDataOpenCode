@@ -1,0 +1,102 @@
+package SparkWordCount;
+
+import scala.Tuple2;
+
+import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.api.java.function.PairFunction;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Pattern;
+
+public final class JavaWordCountSpark {
+	/*
+	 Thay doi pattern => Grep
+	 */
+  public static String patterns = " ";
+  private static Pattern SPACE = Pattern.compile(patterns);
+  public static class mapFunctions extends FlatMapFunction<String, String>
+  {
+
+	@Override
+	public Iterable<String> call(String lines) throws Exception {
+		return Arrays.asList(SPACE.split(lines));
+	}
+
+	
+  }
+  public static void main(String[] args) throws Exception {
+
+    if (args.length < 1) {
+      System.err.println("Usage: JavaWordCount <file>");
+      System.exit(1);
+    }
+    if(args.length==4) {patterns = args[3];
+    	SPACE = Pattern.compile(patterns);
+    }
+    
+    SparkConf sparkConf = new SparkConf().setAppName("JavaWordCount");
+    JavaSparkContext ctx = new JavaSparkContext(sparkConf);
+    JavaRDD<String> lines = ctx.textFile(args[0], 1);
+   
+	/*
+	 * Input map:
+     1 input -> nhieu output. 
+     Tra ve 1 mang cac tu 
+     */
+    JavaRDD<String> words = lines.flatMap(new mapFunctions());
+    /*
+     Buoc output map. Xuat ra ket qua trung gian
+     PairFunction: dau vao la 1 tu
+     dau ra la tuple<string,int>
+     */
+    JavaPairRDD<String, Integer> ones = words.map(new PairFunction<String, String, Integer>() {
+      @Override
+      public Tuple2<String, Integer> call(String s) {
+        return new Tuple2<String, Integer>(s, 1);
+      }
+    });
+    /*
+     Buoc reduce: nhan 2 dau vao la int
+     				Dau ra la int
+     				vi du (((1+1)+1)+1)
+     */
+    JavaPairRDD<String, Integer> counts = ones.reduceByKey(new Function2<Integer, Integer, Integer>() {
+      @Override
+      public Integer call(Integer i1, Integer i2) {
+        return i1 + i2;
+      }
+    });
+   
+    //Dua ra ngoai
+    List<Tuple2<String, Integer>> output = counts.collect();
+    for (Tuple2<String,Integer> tuple : output) {
+      System.out.println(tuple._1() + ": " + tuple._2());
+    }
+    //hoan doi key,value. Vi du : US, 134 => 134, US
+    JavaPairRDD<Integer,String> twos = counts.map(new PairFunction<Tuple2<String,Integer>,Integer,String>(){
+
+		@Override
+		public Tuple2<Integer, String> call(Tuple2<String, Integer> arg0)
+				throws Exception {
+			
+			return new Tuple2<Integer,String>(arg0._2(),arg0._1());
+		}
+    	
+    });
+    //Sap xep cac khoa theo thu tu giam dan
+    JavaPairRDD<Integer,String> sort = twos.sortByKey(false);
+    List<Tuple2<Integer,String>> output2 = twos.collect();
+    //In ra man hinh
+    for(Tuple2<Integer,String> tuple: output2)
+    {
+    	System.out.println(tuple._2()+": "+tuple._1());
+    }
+    ctx.stop();
+  }
+}
