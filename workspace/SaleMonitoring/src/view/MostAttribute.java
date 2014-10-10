@@ -1,4 +1,5 @@
 package view;
+
 import business.*;
 
 import java.util.Collections;
@@ -16,19 +17,20 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 
 import scala.Tuple2;
-public class ProductView {
-	public static void main(String [] args)
-	{
+
+public class MostAttribute {
+
+	public static void main(String[] args) {
 		SparkConf conf = new SparkConf().setAppName("Sales");
 		JavaSparkContext ctx = new JavaSparkContext(conf);
-		JavaRDD<String>lines = ctx.textFile(args[0]);
+		JavaRDD<String> lines = ctx.textFile(args[0]);
 		business.Products p = new business.Products();
-		JavaRDD<String> lineFilter = lines.filter(new Function<String,Boolean>()
-				{
+		JavaRDD<String> lineFilter = lines
+				.filter(new Function<String, Boolean>() {
 
 					/**
-					 * 
-					 */
+				 * 
+				 */
 					private static final long serialVersionUID = 1L;
 
 					@Override
@@ -36,34 +38,23 @@ public class ProductView {
 						// TODO Auto-generated method stub
 						String[] col = arg0.split(Product.regex);
 						String id = col[Product.ID];
-						boolean check = (id.compareTo("NULL")==0?false:true);
-						return check&&!arg0.contains("CampName");
+						boolean check = (id.compareTo("NULL") == 0 ? false
+								: true);
+						return check && !arg0.contains("CampName");
 					}
-				
-				});
-		JavaPairRDD<String,Integer> productsPair = lineFilter.mapToPair(p.productPairByID);
-		JavaPairRDD<String,Integer> products = productsPair.reduceByKey(new ReduceValue());
-		
-		List<Tuple2<String,Integer>> list = products.collect();
-		Collections.sort(list,new TupleComparator());
-	/*	Collections.max(list,new Comparator<Tuple2<String,Integer>>()
-				{
 
-			@Override
-			public int compare(Tuple2<String, Integer> arg0,
-					Tuple2<String, Integer> arg1) {
-				return 0-Integer.compare(arg0._2(),arg1._2());
-			}
-	
-				});*/
+				});
+
+		JavaPairRDD<String, Integer> productsPair = lineFilter
+				.mapToPair(p.productPairByID);
+		JavaPairRDD<String, Integer> products = productsPair
+				.reduceByKey(new ReduceValue());
+
+		List<Tuple2<String, Integer>> list = products.collect();
+		Collections.sort(list, new TupleComparator());
 		Tuple2<String, Integer> maxID = list.get(0);
 		final String maxID1 = maxID._1();
-		for(Tuple2<String,Integer> one: list)
-		{
-			System.out.println(one._1()+", "+one._2());
-		}
-		System.out.println(maxID1);
-		p.ID=maxID1;
+		
 		JavaRDD<String> getProduct = lineFilter.filter(p.filterByID);
 		JavaRDD<String> getAttributes = getProduct.map(new Function<String,String>(){
 
@@ -93,16 +84,6 @@ public class ProductView {
 		{
 			System.out.println(temp);
 		}
-		/*
-		 * Loc theo ngay thang
-		 */
-		p.beginDate.setMonth(2);
-		p.endDate.setMonth(2);
-		JavaRDD<String> lineDate = lineFilter.filter(p.filterByDate);
-		List<String> dateProduct = lineDate.collect();
-		for(String t: dateProduct)
-		{
-			System.out.println(t);
-		}
 	}
+
 }

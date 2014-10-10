@@ -27,7 +27,7 @@ public class Product implements Comparator<Product>,Serializable {
 			GENDER + 3, GENDER + 4, GENDER + 5, GENDER + 7, GENDER + 8,
 			GENDER + 9, GENDER + 10 };
 	public static final String pattern = "yyyy-MM-dd HH:mm:ss.SSS";// pattern cho date time
-	public static final String pattern1 = "yyyy-MM-dd HH:mm:ss";
+	public static final String patternWithoutMili = "yyyy-MM-dd HH:mm:ss";
 	private static final String NULLSTRING = "NULL";
 	private static SimpleDateFormat formatter,formatter1;
 	private Date notDate;
@@ -35,7 +35,7 @@ public class Product implements Comparator<Product>,Serializable {
 	public Product() {
 		setAttributes(new String[10]);
 		formatter = new SimpleDateFormat(pattern);
-		formatter1 = new SimpleDateFormat(pattern1);
+		formatter1 = new SimpleDateFormat(patternWithoutMili);
 		notDate = new Date(1900, 1, 1, 0, 0, 0);
 		this._start_date = notDate;
 		this._end_date = notDate;
